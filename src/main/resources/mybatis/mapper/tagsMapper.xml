@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="blog.mapper.tagsMapper">
+
+    <!--  查询所有标签  -->
+    <select id="findAllTags" resultType="blog.entity.Tags">
+        SELECT g.id,g.name,COUNT(b.id) size
+        FROM  t_tag g
+        LEFT JOIN t_blog_tags bt
+        ON g.id = bt.tag_id
+        LEFT JOIN t_blog b
+        ON b.id = bt.blog_id
+        GROUP BY g.id
+    </select>
+
+    <!--  查询五个标签  -->
+    <select id="findFiveTags" resultType="blog.entity.Tags">
+        SELECT g.id,g.name,COUNT(b.id) size
+        FROM  t_tag g
+        LEFT JOIN t_blog_tags bt
+        ON g.id = bt.tag_id
+        LEFT JOIN t_blog b
+        ON b.id = bt.blog_id
+        GROUP BY g.id
+        LIMIT 5
+    </select>
+
+    <!--  根据博客id查询对应的多个tag  -->
+    <select id="findTagsByBlogId" resultType="blog.entity.Tags">
+        SELECT g.*
+        FROM t_blog b,t_blog_tags t,t_tag g
+        WHERE b.id = t.blog_id AND t.tag_id = g.id AND b.id = #{id}
+    </select>
+
+    <!--  根据博客id查询对应的多个tagId  -->
+    <select id="findTagsIdByBlogId" resultType="java.lang.Integer">
+        SELECT g.id
+        FROM t_blog b,t_blog_tags t,t_tag g
+        WHERE b.id = t.blog_id AND t.tag_id = g.id AND b.id = #{id}
+    </select>
+
+    <!--  根据blogId删掉和blog表的中间表的列  -->
+    <delete id="deleteBlog_Tags" parameterType="java.lang.Integer">
+        DELETE FROM t_blog_tags
+        WHERE t_blog_tags.blog_id = #{id}
+    </delete>
+
+    <!--  添加中间表的列  -->
+    <insert id="insertBlog_Tags" parameterType="Map">
+        INSERT INTO t_blog_tags (blog_id,tag_id)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+                (#{id},#{item})
+        </foreach>
+    </insert>
+
+    <!-- 管理界面查询所有的博客 -->
+    <select id="adminFindAllTag" resultType="blog.entity.Tags">
+        SELECT t.name,t.id
+        FROM t_tag t
+    </select>
+
+    <!-- 保存修改后的tag -->
+    <update id="updateTag">
+        UPDATE t_tag t SET
+        t.name = #{name}
+        WHERE t.id = #{id}
+    </update>
+
+    <!-- 新增Tag -->
+    <insert id="insertTag">
+        INSERT INTO t_tag (name)
+        VALUES (#{name})
+    </insert>
+
+    <!-- 删除Tag -->
+    <delete id="deleteTag">
+        DELETE FROM t_tag
+        WHERE t_tag.id = #{id}
+    </delete>
+
+    <!-- 删除与博客连接的中间表的记录 -->
+    <delete id="deleteTagAndBlog">
+        DELETE FROM t_blog_tags
+        WHERE t_blog_tags.tag_id = #{id}
+    </delete>
+</mapper>

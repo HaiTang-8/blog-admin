@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+        <!DOCTYPE mapper
+                PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+                "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="blog.mapper.blogMapper">
+
+    <!--  根据id查询单个博客  -->
+    <select id="findBlogById" resultType="blog.entity.Blog">
+        SELECT b.id,b.content,b.update_time,b.first_picture,b.title,b.views,b.description,u.avatar,u.nickname
+        FROM t_blog b,t_user u
+        WHERE b.user_id = u.id and b.id = #{id}
+    </select>
+
+    <!--  查询所有博客  -->
+    <select id="findAllBlog" resultType="blog.entity.Blog">
+        SELECT b.id,b.description,b.first_picture,b.title,b.update_time,b.views,t.name typeName,u.nickname,u.avatar
+        FROM t_blog b
+        JOIN t_type t
+        ON b.type_id = t.id
+        JOIN t_user u
+        ON b.user_id = u.id
+        ORDER BY b.create_time DESC
+    </select>
+
+    <!--  根据TypeId查询博客  -->
+    <select id="findBlogByTypeId" resultType="blog.entity.Blog">
+        SELECT b.id,b.update_time,b.first_picture,b.title,b.views,b.description,u.avatar,u.nickname,t.name typeName
+        FROM t_blog b
+        LEFT JOIN t_user u
+        ON u.id = b.user_id
+        LEFT JOIN t_type t
+        ON b.type_id = t.id
+        WHERE b.type_id = #{id}
+        ORDER BY b.update_time DESC
+    </select>
+
+    <!--  根据TagId查询博客  -->
+    <select id="findBlogByTagId" resultType="blog.entity.Blog">
+        SELECT b.id,b.update_time,b.first_picture,b.title,b.views,b.description,u.avatar,u.nickname,g.name typeName
+        FROM t_blog b
+        LEFT JOIN t_user u
+        ON u.id = b.user_id
+        LEFT JOIN t_blog_tags bt
+        ON b.id = bt.blog_id
+        LEFT JOIN t_tag g
+        ON g.id = bt.tag_id
+        WHERE g.id = #{id}
+        ORDER BY b.update_time DESC
+    </select>
+
+    <!--  根据年份查询所有博客  -->
+    <select id="findAllBlogByYear" resultType="blog.entity.vo.BlogVoList">
+        SELECT b.id,b.title,DATE_FORMAT(b.create_time,'%m-%d') MonthDay
+        FROM t_blog b
+        WHERE DATE_FORMAT(b.create_time,'%Y') = #{year}
+        ORDER BY b.create_time
+    </select>
+
+    <!--  查询博客年份集合  -->
+    <select id="findAllBlogYear" resultType="java.lang.String">
+        SELECT DATE_FORMAT(b.create_time,'%Y') year
+        FROM t_blog b
+        ORDER BY b.create_time
+    </select>
+
+    <!--  Search查询  -->
+    <select id="SearchBlog" resultType="blog.entity.Blog">
+        SELECT b.id,b.description,b.first_picture,b.title,b.update_time,b.views,t.name typeName,u.nickname,u.avatar
+        FROM blogs.t_blog b
+        JOIN blogs.t_type t
+        ON b.type_id = t.id
+        JOIN blogs.t_user u
+        ON b.user_id = u.id
+        WHERE b.title LIKE concat('%',#{basis},'%') OR b.description LIKE concat('%',#{basis},'%')
+        ORDER BY b.update_time DESC
+    </select>
+
+
+    <!--  管理界面查询所有博客  -->
+    <select id="findAllBlogAdmin" resultType="blog.entity.Blog">
+        SELECT b.id,b.title,b.update_time,t.name typeName
+        FROM t_blog b
+        JOIN t_type t
+        ON b.type_id = t.id
+        ORDER BY b.create_time DESC
+    </select>
+
+    <!--  管理界面根据用户要求查询博客  -->
+    <select id="findBlogByTitleAndType" resultType="blog.entity.Blog">
+        SELECT b.id,b.title,b.update_time,t.name typeName
+        FROM t_blog b
+        JOIN t_type t
+        ON b.type_id = t.id
+        <where>
+            <if test="title != null">
+                b.title LIKE #{title}
+            </if>
+            <if test="typeName != null">
+                AND t.name = #{typeName}
+            </if>
+        </where>
+        ORDER BY b.create_time DESC
+    </select>
+
+    <!--  编辑博客中根据id查询单个博客  -->
+    <select id="editFindBlogById" resultType="blog.entity.Blog">
+        SELECT b.id,b.content,b.first_picture,b.title,b.description,t.name typeName
+        FROM t_blog b,t_type t
+        WHERE b.type_id = t.id AND b.id = #{id}
+    </select>
+
+    <!--  保存编辑后的新博客内容  -->
+    <update id="updateBlog" parameterType="blog.entity.vo.editBlog">
+        UPDATE t_blog b SET
+        b.content = #{content},
+        b.title = #{title},
+        b.first_picture = #{first_picture},
+        b.description = #{description}
+        <if test="typeName != null">
+            ,b.type_id = #{typeName}
+        </if>
+        WHERE b.id = #{id}
+    </update>
+
+    <!--  查询最新博客的ID  -->
+    <select id="findNewBlog" resultType="java.lang.Integer">
+        SELECT b.id
+        FROM t_blog b
+        ORDER BY(b.create_time) DESC
+        LIMIT 1
+    </select>
+
+    <!--  插入新的博客  -->
+    <insert id="insertBlog" parameterType="blog.entity.vo.editBlog">
+        INSERT INTO t_blog (content,title,first_picture,type_id,description)
+        VALUES (#{content},#{title},#{first_picture},#{typeName},#{description})
+    </insert>
+
+    <!-- 删除博客 -->
+    <delete id="deleteBlogById">
+        DELETE FROM t_blog
+        WHERE t_blog.id = #{id}
+    </delete>
+
+    <!-- 最新推荐 -->
+    <select id="LatestRecommendation" resultType="blog.entity.Blog">
+        SELECT b.id,b.title
+        FROM t_blog b
+        ORDER BY b.create_time DESC
+        LIMIT 6
+    </select>
+
+    <!-- 每次点进一篇博客，该博客的views增加1 -->
+    <update id="updateBlogViews" parameterType="java.lang.Integer">
+        UPDATE t_blog b
+        SET
+        b.views = b.views + 1
+        WHERE b.id = #{id}
+    </update>
+
+</mapper>
